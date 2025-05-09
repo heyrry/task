@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.herry.task.mapper.TaskMapper">
+    <resultMap id="BaseResultMap" type="com.herry.task.repository.dataobject.TaskDO">
+        <id column="id" jdbcType="BIGINT" property="id"/>
+        <result column="gmt_create" jdbcType="TIMESTAMP" property="gmtCreate"/>
+        <result column="gmt_modified" jdbcType="TIMESTAMP" property="gmtModified"/>
+        <result column="deleted" jdbcType="BIGINT" property="deleted"/>
+        <result column="unit" jdbcType="VARCHAR" property="unit"/>
+        <result column="job_id" jdbcType="BIGINT" property="jobId"/>
+        <result column="status" jdbcType="VARCHAR" property="status"/>
+        <result column="job_biz_type" jdbcType="VARCHAR" property="jobBizType"/>
+        <result column="job_biz_key" jdbcType="VARCHAR" property="jobBizKey"/>
+        <result column="task_biz_type" jdbcType="VARCHAR" property="taskBizType"/>
+        <result column="task_biz_key" jdbcType="VARCHAR" property="taskBizKey"/>
+        <result column="expect_execute_time" jdbcType="TIMESTAMP" property="expectExecuteTime"/>
+        <result column="context" jdbcType="VARCHAR" property="context"/>
+        <result column="result" jdbcType="LONGVARCHAR" property="result"/>
+        <result column="retry_times" jdbcType="TINYINT" property="retryTimes"/>
+        <result column="pre_task_ids" jdbcType="VARCHAR" property="preTaskIds"/>
+        <result column="next_task_ids" jdbcType="VARCHAR" property="nextTaskIds"/>
+        <result column="hash_index" jdbcType="BIGINT" property="hashIndex"/>
+        <result column="version" jdbcType="BIGINT" property="version"/>
+    </resultMap>
+
+    <resultMap id="ResultMapWithBLOBs" extends="BaseResultMap" type="com.herry.task.repository.dataobject.TaskWithBLOBs">
+        <result column="context" jdbcType="LONGVARCHAR" property="context"/>
+        <result column="result" jdbcType="LONGVARCHAR" property="result"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,
+        gmt_create,
+        gmt_modified,
+        deleted,
+        unit,
+        job_id,
+        status,
+        job_biz_type,
+        job_biz_key,
+        task_biz_type,
+        task_biz_key,
+        expect_execute_time,
+        retry_times,
+        pre_task_ids,
+        next_task_ids,
+        hash_index,
+        version
+    </sql>
+
+    <sql id="Blob_Column_List">
+        context, result
+    </sql>
+
+    <insert id="batchInsert" parameterType="java.util.List">
+        insert into t_task (id, gmt_create, gmt_modified, deleted,
+        unit, job_id, status,
+        job_biz_type, job_biz_key, task_biz_type, task_biz_key,
+        expect_execute_time, context, result, retry_times,
+        pre_task_ids, next_task_ids, hash_index, version
+        )
+        values
+        <foreach collection="recordList" index="index" item="item" separator=",">
+            (#{item.id,jdbcType=BIGINT}, now(), now(), 0,
+            #{item.unit,jdbcType=VARCHAR}, #{item.jobId,jdbcType=BIGINT}, #{item.status,jdbcType=VARCHAR},
+            #{item.jobBizType,jdbcType=VARCHAR}, #{item.jobBizKey,jdbcType=VARCHAR}, #{item.taskBizType,jdbcType=VARCHAR}, #{item.taskBizKey,jdbcType=VARCHAR},
+            #{item.expectExecuteTime,jdbcType=TIMESTAMP}, #{item.context,jdbcType=VARCHAR}, #{item.result,jdbcType=LONGVARCHAR}, 0,
+            #{item.preTaskIds,jdbcType=VARCHAR}, #{item.nextTaskIds,jdbcType=VARCHAR}, #{item.hashIndex,jdbcType=BIGINT}, 1
+            )
+        </foreach>
+    </insert>
+
+    <select id="findById" resultMap="ResultMapWithBLOBs">
+        SELECT
+        <include refid="Base_Column_List"/>
+        ,
+        <include refid="Blob_Column_List"/>
+        FROM t_task
+        WHERE deleted = 0
+        AND id = #{taskId,jdbcType=VARCHAR}
+    </select>
+
+    <select id="findByJobId" resultMap="ResultMapWithBLOBs">
+        SELECT
+        <include refid="Base_Column_List"/>
+        ,
+        <include refid="Blob_Column_List"/>
+        FROM t_task
+        WHERE deleted = 0
+        AND job_id = #{jobId,jdbcType=BIGINT}
+    </select>
+
+    <select id="findByJobIds" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM t_task
+        WHERE deleted = 0
+        AND job_id in
+        <foreach collection="jobIds" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </select>
+
+    <!--专用方法：使用前自行确认是否满足需求-->
+    <!--专用方法：使用前自行确认是否满足需求-->
+    <!--专用方法：使用前自行确认是否满足需求-->
+    <update id="updateById" parameterType="com.herry.task.repository.dataobject.TaskWithBLOBs">
+        update t_task
+        <set>
+            gmt_modified = now(),
+            <if test="deleted != null">
+                deleted = #{deleted,jdbcType=BIGINT},
+            </if>
+            <if test="status != null">
+                status = #{status,jdbcType=VARCHAR},
+            </if>
+            <if test="result != null">
+                result = #{result,jdbcType=LONGVARCHAR},
+            </if>
+            <if test="retryTimes != null">
+                retry_times = retry_times + 1,
+            </if>
+            version = version + 1
+        </set>
+        where id = #{id,jdbcType=BIGINT} and version = #{version,jdbcType=BIGINT}
+    </update>
+
+    <!--专用方法：使用前自行确认是否满足需求-->
+    <!--专用方法：使用前自行确认是否满足需求-->
+    <!--专用方法：使用前自行确认是否满足需求-->
+    <select id="findByJobKey" parameterType="com.herry.task.repository.dto.TaskQuery" resultMap="BaseResultMap">
+        SELECT
+        job_id
+        FROM t_task
+        WHERE deleted = 0
+        AND job_biz_type = #{jobBizType,jdbcType=VARCHAR}
+        AND job_biz_key = #{jobBizKey,jdbcType=VARCHAR}
+        AND hash_index = #{hashIndex,jdbcType=BIGINT}
+        AND status = #{status,jdbcType=VARCHAR}
+        group by job_biz_type, job_biz_key, hash_index
+        order by job_id
+        limit 2000
+    </select>
+
+    <!--专用方法：使用前自行确认是否满足需求-->
+    <!--专用方法：使用前自行确认是否满足需求-->
+    <!--专用方法：使用前自行确认是否满足需求-->
+    <select id="scanJobList" parameterType="com.herry.task.repository.dto.TaskQuery" resultMap="BaseResultMap">
+        select
+        job_biz_type, job_id, expect_execute_time
+        FROM t_task
+        WHERE deleted = 0
+        AND status = #{status,jdbcType=VARCHAR}
+        AND unit = #{unit,jdbcType=VARCHAR}
+        AND job_biz_type = #{jobBizType,jdbcType=VARCHAR}
+        <if test="minExpectExecuteTime != null"><![CDATA[
+           AND (expect_execute_time >= #{minExpectExecuteTime,jdbcType=TIMESTAMP})
+         ]]>
+        </if>
+        <if test="maxExpectExecuteTime != null"><![CDATA[
+           AND (expect_execute_time <= #{maxExpectExecuteTime,jdbcType=TIMESTAMP})
+         ]]>
+        </if>
+        <if test="maxRetryTimes != null"><![CDATA[
+            AND retry_times < #{maxRetryTimes,jdbcType=TINYINT}
+          ]]>
+        </if>
+        group by job_biz_type, job_id
+        order by expect_execute_time
+        limit #{start}, #{pageSize}
+    </select>
+
+    <!--专用方法：使用前自行确认是否满足需求-->
+    <!--专用方法：使用前自行确认是否满足需求-->
+    <!--专用方法：使用前自行确认是否满足需求-->
+    <select id="queryList" parameterType="com.herry.task.repository.dto.TaskQuery" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        FROM t_task
+        WHERE deleted = 0
+        AND status = #{status,jdbcType=VARCHAR}
+        AND unit = #{unit,jdbcType=VARCHAR}
+        AND job_biz_type = #{jobBizType,jdbcType=VARCHAR}
+        <if test="minExpectExecuteTime != null"><![CDATA[
+           AND (expect_execute_time >= #{minExpectExecuteTime,jdbcType=TIMESTAMP})
+         ]]>
+        </if>
+        <if test="maxExpectExecuteTime != null"><![CDATA[
+           AND (expect_execute_time <= #{maxExpectExecuteTime,jdbcType=TIMESTAMP})
+         ]]>
+        </if>
+        <if test="maxRetryTimes != null"><![CDATA[
+            AND retry_times < #{maxRetryTimes,jdbcType=TINYINT}
+          ]]>
+        </if>
+        limit #{start}, #{pageSize}
+    </select>
+</mapper>

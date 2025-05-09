@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: task
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/task_demo?useSSL=false&serverTimezone=UTC
+    username: root
+    password: heyan123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: 47.119.25.218
+      port: 6379
+      password: 123456
+      database: 0
+      # Lettuce 连接池配置（可选）
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 2
+          max-wait: 1000ms
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml  # XML映射文件路径
+  configuration:
+    map-underscore-to-camel-case: true     # 自动驼峰命名转换
